@@ -1,0 +1,933 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Polar Function Grapher</title>
+<script src="https://cdn.plot.ly/plotly-2.31.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.min.js"></script>
+<style>
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: #fff;
+    color: #000;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    user-select: none;
+  }
+  body {
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  #sidebar {
+    width: 360px;
+    min-width: 320px;
+    background: #f9f9f9;
+    border-right: 1px solid #ccc;
+    overflow-y: auto;
+    padding: 15px 20px;
+    box-sizing: border-box;
+  }
+  #main {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+  }
+  h1 {
+    margin: 0 0 15px 0;
+    font-weight: 700;
+    font-size: 1.8rem;
+    user-select: text;
+  }
+  h2 {
+    font-weight: 600;
+    font-size: 1.2rem;
+    margin-top: 20px;
+  }
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 1rem;
+    user-select: none;
+  }
+  input[type="text"] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    font-size: 1.1rem;
+    border: 2px solid #000;
+    border-radius: 6px;
+    color: #000;
+    background: #fff;
+    margin-bottom: 14px;
+    user-select: text;
+    transition: border-color 0.25s ease;
+  }
+  input[type="text"]:focus {
+    outline: none;
+    border-color: #007acc;
+  }
+  #function-list {
+    max-height: 340px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 10px 12px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    background: #fff;
+  }
+  .function-item {
+    border-bottom: 1px solid #ddd;
+    padding: 10px 0;
+  }
+  .function-item:last-child {
+    border-bottom: none;
+  }
+  .function-input {
+    flex-grow: 1;
+    font-size: 1.1rem;
+    padding: 10px 12px;
+    border: 2px solid #000;
+    border-radius: 6px;
+    background: #fff;
+    color: #000;
+  }
+  .function-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .color-box {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 1.5px solid #999;
+    user-select: none;
+  }
+  .slider-container {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    color: #555;
+  }
+  .slider-label {
+    white-space: nowrap;
+    min-width: 50px;
+    text-align: center;
+  }
+  input[type="range"] {
+    flex-grow: 1;
+    appearance: none;
+    -webkit-appearance: none;
+    height: 6px;
+    background: #ddd;
+    border-radius: 5px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #007acc;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: #007acc;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  button {
+    font-size: 1.1rem;
+    padding: 10px 20px;
+    margin-top: 12px;
+    border-radius: 6px;
+    border: 2px solid #000;
+    background: #000;
+    color: #fff;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.3s ease;
+  }
+  button:hover, button:focus {
+    background: #222;
+    outline: none;
+  }
+  #domain-range {
+    margin-top: 10px;
+    border-top: 1px solid #ddd;
+    padding-top: 20px;
+  }
+  #domain-range label {
+    margin-bottom: 8px;
+  }
+  #domainInput, #rangeInput {
+    font-family: monospace;
+    font-weight: 700;
+  }
+  #stats {
+    margin-top: 24px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    white-space: pre-wrap;
+    color: #222;
+    max-height: 160px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 14px 16px;
+    border-radius: 6px;
+    background: #fff;
+  }
+  #graph {
+    flex-grow: 1;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: #fff;
+    user-select: none;
+    touch-action: pan-x pan-y;
+    min-width: 300px;
+  }
+  #sidebar::-webkit-scrollbar {
+    width: 8px;
+  }
+  #sidebar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+  #sidebar::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+  }
+  #sidebar::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+  @media (max-width: 900px) {
+    body {
+      flex-direction: column;
+    }
+    #sidebar {
+      width: 100%;
+      max-height: 320px;
+      border-right: none;
+      border-bottom: 1px solid #ccc;
+      overflow-y: auto;
+    }
+    #graph {
+      min-height: 420px;
+      width: 100%;
+      margin-top: 14px;
+    }
+  }
+  .remove-btn {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  min-height: 40px; 
+  padding: 0 12px;
+  font-size: 1.1rem;
+  margin-left: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  transform: translateY(-15px);
+  }
+
+
+  .remove-btn:hover {
+    background-color: #d32f2f;
+  }
+</style>
+</head>
+<body>
+  
+  <div id="sidebar" role="region" aria-label="Graph controls panel">
+    <h1>Polar Functions</h1>
+    <div id="function-list" aria-live="polite" aria-relevant="additions removals">
+    </div>
+    <button id="addFuncBtn" aria-label="Add a new polar function">+ Add Function</button>
+
+    <div id="domain-range" aria-label="Domain and Range input section">
+      <h2>Domain & Range</h2>
+      <label for="domainInput">Domain (θ) interval — e.g. <code>[0, 2π]</code> or <code>(0, ∞)</code>:</label>
+      <input id="domainInput" type="text" placeholder="[0, 2π]" aria-describedby="domainDesc" autocomplete="off" />
+      <div id="domainDesc" style="font-size: 0.8rem; color: #555; margin-bottom: 18px;">Use brackets () or [] with two values separated by a comma. You can use 'inf' for infinity. (if left blank, defaults to [0, 2π]).</div>
+
+      <label for="rangeInput">Range (r) interval — e.g. <code>[-10, 10]</code> or <code>(-∞, ∞)</code>:</label>
+      <input id="rangeInput" type="text" placeholder="[-10, 10]" aria-describedby="rangeDesc" autocomplete="off" />
+      <div id="rangeDesc" style="font-size: 0.8rem; color: #555;">Use brackets () or [] with two numbers separated by a comma. You can use 'inf' for infinity. (if left blank, defaults to [-10, 10]).</div>
+    </div>
+
+    <button id="exportBtn" aria-label="Export graph as PNG">Export Graph as PNG</button>
+
+    <div id="stats" aria-live="polite" aria-atomic="true" aria-relevant="text" style="margin-top: 20px;">
+      Domain: [0, 2π]
+      Range: [-10, 10]
+      Critical Points:
+      None
+    </div>
+  </div>
+
+  <main id="main" role="main" aria-label="Polar graph area">
+    <div id="graph"></div>
+  </main>
+
+<script>
+  
+
+  (() => {
+    let functionIdCounter = 0;
+    const colors = [
+      '#1f77b4', '#ff7f0e', '#2ca02c',
+      '#d62728', '#9467bd', '#8c564b',
+      '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'
+    ];
+    
+    let globalDomain = { start: 0, end: 2 * Math.PI, inclusiveStart: true, inclusiveEnd: true };
+    let range = { start: -10, end: 10, inclusiveStart: true, inclusiveEnd: true };
+
+    // Threshold for detecting a very large 'r' value, which suggests an asymptote.
+    const ASYMPTOTE_R_THRESHOLD = 50000;
+    
+    /**
+     * Converts common keywords like 'theta', 'pi', and 'inf' to their
+     * corresponding Unicode symbols for display.
+     * @param {string} str The input string.
+     * @returns {string} The beautified string with symbols.
+     */
+    function beautifyDisplay(str) {
+      // Correctly handle negative infinity first, then positive
+      return str.replace(/theta/gi, 'θ').replace(/pi/gi, 'π').replace(/-inf/gi, '-∞').replace(/inf/gi, '∞');
+    }
+
+    /**
+     * Parses a string like '[0, 2*pi]' or '(0, ∞)' into an object.
+     * @param {string} str The input domain/range string.
+     * @returns {object|null} The parsed domain/range object, or null on error.
+     */
+    function parseInterval(str) {
+      str = str.trim();
+      const firstChar = str[0];
+      const lastChar = str[str.length - 1];
+
+      if (!((firstChar === '[' && lastChar === ']') || (firstChar === '(' && lastChar === ')'))) {
+        return null; 
+      }
+      const inclusiveStart = firstChar === '[';
+      const inclusiveEnd = lastChar === ']';
+
+      const inside = str.slice(1, -1);
+      const parts = inside.split(',');
+      if (parts.length !== 2) return null;
+
+      let startStr = parts[0].trim().toLowerCase();
+      let endStr = parts[1].trim().toLowerCase();
+
+      let start, end;
+      try {
+        if (startStr === '-inf' || startStr === '-∞') {
+          start = -Infinity;
+        } else if (startStr === 'inf' || startStr === '∞') {
+          start = Infinity;
+        } else {
+          start = math.evaluate(startStr.replace(/π/g, 'pi'));
+        }
+
+        if (endStr === '-inf' || endStr === '-∞') {
+          end = -Infinity;
+        } else if (endStr === 'inf' || endStr === '∞') {
+          end = Infinity;
+        } else {
+          end = math.evaluate(endStr.replace(/π/g, 'pi'));
+        }
+      } catch {
+        return null;
+      }
+      // Check for valid numbers and ensure start is less than end
+      if (typeof start !== 'number' || typeof end !== 'number' || start >= end) {
+        // If they are both infinite, that's not a valid interval
+        if (start === -Infinity && end === Infinity) {
+          return { start, end, inclusiveStart, inclusiveEnd };
+        }
+        return null;
+      }
+      return { start, end, inclusiveStart, inclusiveEnd };
+    }
+
+    /**
+     * Sets up an input element to automatically replace keywords with symbols
+     * and update the graph only when the input is valid or cleared.
+     * @param {HTMLInputElement} input The input element to modify.
+     */
+    function setupInputBeautify(input) {
+      input.addEventListener('input', () => {
+        // --- Beautification Logic ---
+        const val = input.value;
+        const beautified = beautifyDisplay(val);
+        if (val !== beautified) {
+          // Adjust cursor position after replacement
+          const pos = input.selectionStart - (val.length - beautified.length);
+          input.value = beautified;
+          input.setSelectionRange(pos, pos);
+        }
+        
+        // --- Selective Plotting Logic ---
+        const finalVal = input.value.trim();
+        if (finalVal === '' || finalVal.endsWith(']') || finalVal.endsWith(')')) {
+          plotGraphs();
+        }
+      });
+      // Also ensure the initial value is beautified
+      input.value = beautifyDisplay(input.value);
+    }
+    
+    /**
+     * Updates the individual function domain sliders based on the global domain.
+     */
+    function updateSliders() {
+      const domainStr = document.getElementById('domainInput').value.trim() || '[0, 2π]';
+      const domain = parseInterval(domainStr);
+      if (!domain || domain.start === -Infinity || domain.end === Infinity) return;
+
+      const sliders = document.querySelectorAll('.domain-slider');
+      sliders.forEach(slider => {
+        slider.min = domain.start;
+        slider.max = domain.end;
+        slider.step = (domain.end - domain.start) / 1000;
+        // Make sure the slider value is within the new range
+        if (parseFloat(slider.value) > domain.end) {
+          slider.value = domain.end;
+        }
+        slider.closest('.function-item').querySelector('.slider-end-label').textContent = formatRadian(domain.end);
+        slider.closest('.function-item').querySelector('.slider-start-label').textContent = formatRadian(domain.start);
+      });
+    }
+
+    /**
+     * Adds a new function input row to the sidebar.
+     * @param {string} [value=''] The initial value for the function input.
+     */
+    function addFunctionRow(value = '') {
+      const id = functionIdCounter++;
+      const container = document.createElement('div');
+      container.className = 'function-item';
+      container.dataset.id = id;
+
+      const header = document.createElement('div');
+      header.className = 'function-header';
+
+      const colorBox = document.createElement('div');
+      colorBox.className = 'color-box';
+      colorBox.style.backgroundColor = colors[id % colors.length];
+      header.appendChild(colorBox);
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'function-input';
+      input.placeholder = 'Example: 2*sin(3θ) + 1';
+      input.value = beautifyDisplay(value);
+      input.setAttribute('aria-label', `Polar function input ${id + 1}`);
+      header.appendChild(input);
+
+      // Re-plot on every input change for the function
+      input.addEventListener('input', () => {
+        input.value = beautifyDisplay(input.value);
+        plotGraphs();
+      });
+
+      const rmBtn = document.createElement('button');
+      rmBtn.textContent = '✕';
+      rmBtn.title = 'Remove this function';
+      rmBtn.className = 'remove-btn'; // Use the new CSS class
+      rmBtn.addEventListener('click', () => {
+        container.remove();
+        plotGraphs(); 
+      });
+      header.appendChild(rmBtn);
+
+      container.appendChild(header);
+
+      const sliderContainer = document.createElement('div');
+      sliderContainer.className = 'slider-container';
+
+      const startLabel = document.createElement('span');
+      startLabel.className = 'slider-start-label';
+      sliderContainer.appendChild(startLabel);
+
+      const slider = document.createElement('input');
+      slider.type = 'range';
+      slider.className = 'domain-slider';
+      // Slider min/max will be set by updateSliders
+      slider.step = (2 * Math.PI) / 1000;
+      slider.value = 2 * Math.PI;
+      slider.addEventListener('input', plotGraphs);
+      sliderContainer.appendChild(slider);
+
+      const endLabel = document.createElement('span');
+      endLabel.className = 'slider-end-label';
+      sliderContainer.appendChild(endLabel);
+
+      container.appendChild(sliderContainer);
+
+      document.getElementById('function-list').appendChild(container);
+      updateSliders(); // Initialize new slider values
+      input.focus();
+    }
+    
+    /**
+     * Checks if parentheses in a string are balanced.
+     * @param {string} s The input string.
+     * @returns {boolean} True if balanced, false otherwise.
+     */
+    function isBalanced(s) {
+      let balance = 0;
+      for (const char of s) {
+        if (char === '(') balance++;
+        else if (char === ')') balance--;
+        if (balance < 0) return false;
+      }
+      return balance === 0;
+    }
+
+    /**
+     * Gets all valid functions from the input fields.
+     * @returns {Array<object>} An array of function objects.
+     */
+    function getAllFunctions() {
+      const containers = document.querySelectorAll('#function-list .function-item');
+      const funcs = [];
+      containers.forEach((c, i) => {
+        const input = c.querySelector('input.function-input');
+        const slider = c.querySelector('.domain-slider');
+        if (input && input.value.trim()) {
+          funcs.push({
+            id: i,
+            inputRaw: input.value.trim(),
+            color: colors[i % colors.length],
+            label: `f${i + 1}`,
+            domainEnd: parseFloat(slider.value)
+          });
+        }
+      });
+      return funcs;
+    }
+
+    /**
+     * Prepares the raw user input for `math.js` evaluation.
+     * @param {string} input The raw user input string.
+     * @returns {string} The preprocessed string.
+     */
+    function preprocessInput(input) {
+      let s = input.toLowerCase();
+    
+      s = s.replace(/θ/g, 'x');
+      s = s.replace(/π/g, `(${Math.PI})`);
+      s = s.replace(/e/g, `(${Math.E})`);
+    
+      s = s.replace(/\b(sin|cos|tan|sec|csc|cot)\s*\^(\d+)\s*\(\s*x\s*\)/g, '($1(x))^$2');
+    
+      s = s.replace(/\b(sin|cos|tan|sec|csc|cot)\s*\^\s*-1\s*\(\s*x\s*\)/g, (match, fn) => {
+        const map = {
+          sin: 'asin',
+          cos: 'acos',
+          tan: 'atan',
+          sec: 'asec',
+          csc: 'acsc',
+          cot: 'acot'
+        };
+        return `${map[fn]}(x)`;
+      });
+    
+      s = s.replace(/\barcsin\s*\(\s*x\s*\)/g, 'asin(x)');
+      s = s.replace(/\barccos\s*\(\s*x\s*\)/g, 'acos(x)');
+      s = s.replace(/\barctan\s*\(\s*x\s*\)/g, 'atan(x)');
+      s = s.replace(/\barcsec\s*\(\s*x\s*\)/g, 'asec(x)');
+      s = s.replace(/\barccsc\s*\(\s*x\s*\)/g, 'acsc(x)');
+      s = s.replace(/\barccot\s*\(\s*x\s*\)/g, 'acot(x)');
+    
+      s = s.replace(/(\d)([a-z(])/gi, '$1*$2');
+      s = s.replace(/([a-z)])(\d)/gi, '$1*$2');
+      s = s.replace(/\)(\()/g, ')*(');
+    
+      return s;
+    }
+
+    /**
+     * Formats a radian value into a user-friendly string.
+     * @param {number} rad The radian value.
+     * @returns {string} The formatted string.
+     */
+    function formatRadian(rad) {
+      if (rad === Infinity) return '∞';
+      if (rad === -Infinity) return '-∞';
+      const pi = Math.PI;
+      const tolerance = 0.02;
+      const multiples = [0, 0.25, 0.3333, 0.5, 0.6666, 0.75, 1, 1.5, 2];
+      const labels = ['0', 'π/4', 'π/3', 'π/2', '2π/3', '3π/4', 'π', '3π/2', '2π'];
+      for (let i = 0; i < multiples.length; i++) {
+        if (Math.abs(rad - multiples[i] * pi) < tolerance) return labels[i];
+      }
+      return rad.toFixed(3);
+    }
+    
+    /**
+     * Formats a number for display, handling infinity.
+     * @param {number} num The number to format.
+     * @returns {string} The formatted string.
+     */
+    function formatNumber(num) {
+      if (num === Infinity) return '∞';
+      if (num === -Infinity) return '-∞';
+      return num.toFixed(3);
+    }
+
+    function findCriticalPoints(theta, r) {
+      const crit = [];
+      for (let i = 1; i < theta.length - 1; i++) {
+        const r0 = r[i - 1], r1 = r[i], r2 = r[i + 1];
+        if (isNaN(r1) || !isFinite(r1)) continue;
+        if (r1 === 0) {
+          crit.push({ theta: theta[i], r: r1, type: 'Zero' });
+          continue;
+        }
+        if ((r1 > r0 && r1 > r2) || (r1 < r0 && r1 < r2)) {
+          const type = (r1 > r0 && r1 > r2) ? 'Local Max' : 'Local Min';
+          crit.push({ theta: theta[i], r: r1, type });
+        }
+      }
+      return crit;
+    }
+
+    // Adds polar coordinate system shapes & labels
+    function addPolarCoordinateSystem(rangeStart, rangeEnd) {
+      const shapes = [];
+      const annotations = [];
+      
+      const maxRadius = Math.max(Math.abs(rangeStart), Math.abs(rangeEnd));
+      
+      if (!isFinite(maxRadius)) return { shapes, annotations };
+      
+      const stepRadius = Math.max(1, Math.floor(maxRadius / 5));
+
+      // Concentric circles for radius
+      for (let r = stepRadius; r <= maxRadius; r += stepRadius) {
+        shapes.push({
+          type: 'circle',
+          xref: 'x',
+          yref: 'y',
+          x0: -r,
+          y0: -r,
+          x1: r,
+          y1: r,
+          line: {
+            color: '#bbb',
+            width: 1,
+            dash: 'dot'
+          }
+        });
+        annotations.push({
+          x: r,
+          y: 0,
+          text: `${r}`,
+          showarrow: false,
+          font: { size: 10, color: '#555' },
+          xanchor: 'left',
+          yanchor: 'bottom'
+        });
+      }
+
+      // Radial lines & labels
+      const anglesDeg = [0, 30, 45, 60, 90, 120, 135, 150, 180, 210, 225, 240, 270, 300, 315, 330];
+      anglesDeg.forEach(deg => {
+        const rad = deg * Math.PI / 180;
+        const xEnd = maxRadius * Math.cos(rad);
+        const yEnd = maxRadius * Math.sin(rad);
+
+        shapes.push({
+          type: 'line',
+          xref: 'x',
+          yref: 'y',
+          x0: 0,
+          y0: 0,
+          x1: xEnd,
+          y1: yEnd,
+          line: {
+            color: '#bbb',
+            width: 1,
+            dash: 'dot'
+          }
+        });
+
+        // Angle label position (a bit outside)
+        const labelRadius = maxRadius * 1.05;
+        const labelX = labelRadius * Math.cos(rad);
+        const labelY = labelRadius * Math.sin(rad);
+
+        const labelText = deg === 0 ? '0° / 0' :
+                          deg === 180 ? '180° / π' :
+                          deg === 90 ? '90° / π/2' :
+                          deg === 270 ? '270° / 3π/2' :
+                          `${deg}°`;
+
+        annotations.push({
+          x: labelX,
+          y: labelY,
+          text: labelText,
+          showarrow: false,
+          font: { size: 10, color: '#555' },
+          xanchor: 'center',
+          yanchor: 'middle',
+          bgcolor: '#fff',
+          borderpad: 1,
+          opacity: 0.7
+        });
+      });
+
+      return { shapes, annotations };
+    }
+
+    function plotGraphs() {
+      const funcs = getAllFunctions();
+      const stats = document.getElementById('stats');
+      let statsText = '';
+
+      const domainStr = document.getElementById('domainInput').value.trim() || '[0, 2π]';
+      const rangeStr = document.getElementById('rangeInput').value.trim() || '[-10, 10]';
+
+      const parsedDomain = parseInterval(domainStr);
+      const parsedRange = parseInterval(rangeStr);
+
+      if (!parsedDomain) {
+        stats.innerHTML = `Invalid domain interval: "${domainStr}"`;
+        return;
+      }
+      if (!parsedRange) {
+        stats.innerHTML = `Invalid range interval: "${rangeStr}"`;
+        return;
+      }
+      globalDomain = parsedDomain;
+      range = parsedRange;
+      
+      updateSliders(); // Make sure sliders reflect the new domain
+
+      const traces = [];
+      let isAnyFunctionValid = false;
+
+      // Determine the plot range. If range is infinite, cap it at a large value.
+      const plotRange = {
+        start: isFinite(range.start) ? range.start : -200,
+        end: isFinite(range.end) ? range.end : 200
+      };
+      
+      // Plotly layout, initialized with polar grid
+      const polarSys = addPolarCoordinateSystem(plotRange.start, plotRange.end);
+      const layout = {
+        paper_bgcolor: '#fff',
+        plot_bgcolor: '#fff',
+        xaxis: {
+          title: 'Re',
+          zeroline: false,
+          gridcolor: '#ddd',
+          color: '#000',
+          linecolor: '#000',
+          mirror: true,
+          zerolinecolor: '#000',
+          range: [plotRange.start, plotRange.end],
+          scaleanchor: 'y',
+          scaleratio: 1,
+          showgrid: true
+        },
+        yaxis: {
+          title: 'Im',
+          zeroline: false,
+          gridcolor: '#ddd',
+          color: '#000',
+          linecolor: '#000',
+          mirror: true,
+          zerolinecolor: '#000',
+          range: [plotRange.start, plotRange.end],
+          showgrid: true
+        },
+        margin: { t: 40, b: 50, l: 60, r: 30 },
+        dragmode: 'pan',
+        hovermode: 'closest',
+        legend: { borderwidth: 1 },
+        font: { family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", size: 14, color: '#000' },
+        shapes: polarSys.shapes,
+        annotations: polarSys.annotations
+      };
+
+      funcs.forEach(({ id, inputRaw, color, label, domainEnd }) => {
+        const exprStr = preprocessInput(inputRaw);
+        
+        if (!isBalanced(exprStr)) {
+          statsText += `${label}: Invalid function - Unbalanced parentheses<br/><br/>`;
+          return;
+        }
+
+        let expr;
+        try {
+          expr = math.compile(exprStr);
+        } catch (err) {
+          statsText += `${label}: Invalid function - ${err.message}<br/><br/>`;
+          return;
+        }
+        
+        // Define local domain for plotting based on global domain and slider
+        const localDomain = { start: globalDomain.start, end: domainEnd };
+        
+        // Handle infinite domain for the plotting loop
+        const plotStart = isFinite(localDomain.start) ? localDomain.start : -100 * Math.PI;
+        const plotEnd = isFinite(localDomain.end) ? localDomain.end : 100 * Math.PI;
+        
+        // Increased points to make the curves smoother.
+        const pointsCount = 8000; 
+        const step = (plotEnd - plotStart) / pointsCount;
+        const theta = [];
+        for (let i = 0; i <= pointsCount; i++) {
+          theta.push(plotStart + i * step);
+        }
+
+        const r = theta.map(t => {
+          try {
+            return expr.evaluate({ x: t });
+          } catch {
+            return NaN;
+          }
+        });
+
+        const xVals = [];
+        const yVals = [];
+        const criticalPoints = [];
+        const asymptotes = new Set();
+        
+        // Asymptote detection
+        for(let i = 1; i < r.length; i++) {
+          if (Math.abs(r[i]) > ASYMPTOTE_R_THRESHOLD && isFinite(r[i-1])) {
+              let asymptoteTheta = theta[i];
+              if (Math.abs(r[i-1]) > Math.abs(r[i]/2)) {
+                  asymptoteTheta = theta[i-1];
+              }
+              asymptotes.add(asymptoteTheta);
+          }
+        }
+
+        for (let i = 0; i < theta.length; i++) {
+          let current_r = r[i];
+          
+          if (typeof current_r !== 'number' || isNaN(current_r) || !isFinite(current_r)) {
+            xVals.push(NaN);
+            yVals.push(NaN);
+            continue;
+          }
+
+          // Enforce strict range boundaries for plotting
+          const isOutOfLowerBound = range.inclusiveStart ? (current_r < range.start) : (current_r <= range.start);
+          const isOutOfUpperBound = range.inclusiveEnd ? (current_r > range.end) : (current_r >= range.end);
+
+          if (isOutOfLowerBound || isOutOfUpperBound) {
+            xVals.push(NaN);
+            yVals.push(NaN);
+            continue;
+          }
+
+          xVals.push(current_r * Math.cos(theta[i]));
+          yVals.push(current_r * Math.sin(theta[i]));
+        }
+
+        criticalPoints.push(...findCriticalPoints(theta, r));
+
+        statsText += `${label}:<br/>`;
+        statsText += `  Asymptotes (${asymptotes.size}):<br/>`;
+        if (asymptotes.size === 0) {
+          statsText += '   None<br/>';
+        } else {
+          asymptotes.forEach(asympTheta => {
+            statsText += `   - Equation: θ = ${formatRadian(asympTheta)}<br/>`;
+            
+            // Add the asymptote line to the plot layout
+            const maxRange = Math.max(Math.abs(plotRange.start), Math.abs(plotRange.end));
+            const x0 = -maxRange * Math.cos(asympTheta);
+            const y0 = -maxRange * Math.sin(asympTheta);
+            const x1 = maxRange * Math.cos(asympTheta);
+            const y1 = maxRange * Math.sin(asympTheta);
+            
+            layout.shapes.push({
+                type: 'line',
+                xref: 'x',
+                yref: 'y',
+                x0: x0,
+                y0: y0,
+                x1: x1,
+                y1: y1,
+                line: {
+                    color: color,
+                    width: 2,
+                    dash: 'dashdot'
+                }
+            });
+          });
+        }
+        
+        statsText += `  Critical Points (${criticalPoints.length}):<br/>`;
+        if (criticalPoints.length === 0) statsText += '   None<br/>';
+        else {
+          criticalPoints.forEach((cp, i) => {
+            statsText += `   ${i + 1}. θ=${formatRadian(cp.theta)}, r=${cp.r.toFixed(3)} (${cp.type})<br/>`;
+          });
+        }
+        statsText += '<br/>';
+
+        traces.push({
+          x: xVals,
+          y: yVals,
+          mode: 'lines',
+          name: label,
+          line: { color: color, width: 1.5 },
+          hoverinfo: 'x+y+name'
+        });
+        isAnyFunctionValid = true;
+      });
+
+      const domainStrDisplay = `${globalDomain.inclusiveStart ? '[' : '('}${formatRadian(globalDomain.start)}, ${formatRadian(globalDomain.end)}${globalDomain.inclusiveEnd ? ']' : ')'}`;
+      const rangeStrDisplay = `${range.inclusiveStart ? '[' : '('}${formatNumber(range.start)}, ${formatNumber(range.end)}${range.inclusiveEnd ? ']' : ')'}`;
+      
+      stats.innerHTML = `Domain: ${domainStrDisplay}<br/>Range: ${rangeStrDisplay}<br/><br/>${statsText.trim() || 'No valid functions to plot.'}`;
+
+      Plotly.newPlot('graph', traces, layout, { responsive: true, scrollZoom: true, displayModeBar: true });
+    }
+
+    function exportGraph() {
+      Plotly.downloadImage('graph', { format: 'png', filename: 'polar-graph', height: 600, width: 900 });
+    }
+
+    window.onload = function() {
+      addFunctionRow('2*cos(2θ)');
+      plotGraphs();
+      document.getElementById('addFuncBtn').onclick = () => {
+        addFunctionRow();
+      };
+      document.getElementById('exportBtn').onclick = exportGraph;
+      
+      const domainInput = document.getElementById('domainInput');
+      setupInputBeautify(domainInput);
+      domainInput.value = '[0, 2π]';
+
+      const rangeInput = document.getElementById('rangeInput');
+      setupInputBeautify(rangeInput);
+      rangeInput.value = '[-10, 10]';
+    };
+  })();
+  
+</script>
+</body>
+</html>
